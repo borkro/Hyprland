@@ -35,18 +35,23 @@ namespace SignalSafe {
         }
 
         void writeNum(size_t num) {
+            if (num == 0) {
+                write('0');
+                return;
+            }
+
             size_t d = 1;
 
             while (num / 10 >= d) {
                 d *= 10;
             }
 
-            while (num > 0) {
+            do {
                 char c = '0' + (num / d);
                 write(c);
                 num %= d;
                 d /= 10;
-            }
+            } while (d != 0);
         }
 
         char const* getStr() {
@@ -106,18 +111,23 @@ namespace SignalSafe {
         }
 
         void writeNum(size_t num) {
+            if (num == 0) {
+                write('0');
+                return;
+            }
+
             size_t d = 1;
 
             while (num / 10 >= d) {
                 d *= 10;
             }
 
-            while (num > 0) {
+            do {
                 char c = '0' + (num / d);
                 write(c);
                 num %= d;
                 d /= 10;
-            }
+            } while (d != 0);
         }
 
         void writeCmdOutput(const char* cmd) {

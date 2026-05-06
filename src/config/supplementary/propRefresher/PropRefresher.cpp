@@ -3,12 +3,15 @@
 #include "../../../managers/eventLoop/EventLoopManager.hpp"
 #include "../../../managers/input/InputManager.hpp"
 #include "../../../render/Renderer.hpp"
+#include "../../../render/decorations/CHyprGroupBarDecoration.hpp"
 #include "../../../Compositor.hpp"
 #include "../../../layout/supplementary/WorkspaceAlgoMatcher.hpp"
 #include "../../../layout/LayoutManager.hpp"
+#include "../../../layout/space/Space.hpp"
 #include "../../../desktop/rule/Engine.hpp"
 
 #include "../../shared/monitor/MonitorRuleManager.hpp"
+#include "../../shared/inotify/ConfigWatcher.hpp"
 
 using namespace Config;
 using namespace Config::Supplementary;
@@ -19,6 +22,8 @@ UP<CPropRefresher>& Supplementary::refresher() {
 }
 
 void CPropRefresher::scheduleRefresh(PropRefreshBits prop) {
+    static auto PZOOMFACTOR = CConfigValue<Config::FLOAT>("cursor:zoom_factor");
+
     m_propsTripped |= prop;
 
     if (!m_scheduled) {
@@ -80,6 +85,20 @@ void CPropRefresher::scheduleRefresh(PropRefreshBits prop) {
                     g_pHyprRenderer->damageMonitor(m);
                 }
             }
+
+            if (m_propsTripped & REFRESH_CURSOR_ZOOMS) {
+                for (auto const& m : g_pCompositor->m_monitors) {
+                    *(m->m_cursorZoom) = *PZOOMFACTOR;
+                    if (m->m_activeWorkspace)
+                        m->m_activeWorkspace->m_space->recalculate();
+                }
+            }
+
+            if (m_propsTripped & REFRESH_CONFIG_WATCHER)
+                Config::watcher()->update();
+
+            if (m_propsTripped & REFRESH_GRADIENTS_GROUPBAR)
+                refreshGroupBarGradients();
 
             m_scheduled    = false;
             m_propsTripped = 0;

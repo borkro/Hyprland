@@ -32,6 +32,7 @@ namespace SignalSafe {
             }
             m_str[m_strPos] = c;
             m_strPos++;
+            m_str[m_strPos] = '\0';
         }
 
         void writeNum(size_t num) {
@@ -46,12 +47,12 @@ namespace SignalSafe {
                 d *= 10;
             }
 
-            do {
+            while (d > 0) {
                 char c = '0' + (num / d);
                 write(c);
                 num %= d;
                 d /= 10;
-            } while (d != 0);
+            }
         }
 
         char const* getStr() {
@@ -122,12 +123,12 @@ namespace SignalSafe {
                 d *= 10;
             }
 
-            do {
+            while (d > 0) {
                 char c = '0' + (num / d);
                 write(c);
                 num %= d;
                 d /= 10;
-            } while (d != 0);
+            }
         }
 
         void writeCmdOutput(const char* cmd) {

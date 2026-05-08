@@ -95,6 +95,9 @@ void CFocusState::rawWindowFocus(PHLWINDOW pWindow, eFocusReason reason, SP<CWLS
     static auto PFOLLOWMOUSE        = CConfigValue<Config::INTEGER>("input:follow_mouse");
     static auto PSPECIALFALLTHROUGH = CConfigValue<Config::INTEGER>("input:special_fallthrough");
 
+    if (pWindow == m_focusWindow && surface == m_focusSurface)
+        return;
+
     if (!pWindow || !pWindow->priorityFocus()) {
         if (g_pSessionLockManager->isSessionLocked()) {
             Log::logger->log(Log::DEBUG, "Refusing a keyboard focus to a window because of a sessionlock");
@@ -305,5 +308,6 @@ void CFocusState::resetWindowFocus() {
 }
 
 bool Desktop::isHardInputFocusReason(eFocusReason r) {
-    return r == FOCUS_REASON_NEW_WINDOW || r == FOCUS_REASON_KEYBIND || r == FOCUS_REASON_GHOSTS || r == FOCUS_REASON_CLICK || r == FOCUS_REASON_DESKTOP_STATE_CHANGE;
+    return r == FOCUS_REASON_NEW_WINDOW || r == FOCUS_REASON_KEYBIND || r == FOCUS_REASON_GHOSTS || r == FOCUS_REASON_CLICK || r == FOCUS_REASON_DESKTOP_STATE_CHANGE ||
+        r == FOCUS_REASON_UNMAP_WINDOW_TILING || r == FOCUS_REASON_SWITCH_TO_WINDOW_HARD;
 }

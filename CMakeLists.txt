@@ -604,6 +604,12 @@ else()
   message(STATUS "hyprpm is enabled (NO_HYPRPM not defined)")
 endif()
 
+# Set proper permissions for directories, otherwise they could end up 700
+set(CMAKE_INSTALL_DEFAULT_DIRECTORY_PERMISSIONS
+    OWNER_READ OWNER_WRITE OWNER_EXECUTE
+    GROUP_READ GROUP_EXECUTE
+    WORLD_READ WORLD_EXECUTE)
+
 # binary and symlink
 install(TARGETS Hyprland)
 
@@ -628,10 +634,6 @@ add_compile_definitions(DATAROOTDIR="${CMAKE_INSTALL_FULL_DATAROOTDIR}")
 # installable assets
 file(GLOB_RECURSE INSTALLABLE_ASSETS "assets/install/*")
 install(FILES ${INSTALLABLE_ASSETS}
-        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/hypr)
-
-# default config
-install(FILES ${CMAKE_SOURCE_DIR}/example/hyprland.conf
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/hypr)
 
 # default lua config

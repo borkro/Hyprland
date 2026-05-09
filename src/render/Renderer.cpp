@@ -3401,3 +3401,30 @@ SP<ITexture> IHyprRenderer::renderSplash(const std::function<SP<ITexture>(const 
     cairo_destroy(CAIRO);
     return tex;
 }
+
+using ColorConversionKey = std::tuple<float, float, float, float, uint64_t>;
+static std::map<ColorConversionKey, CHyprColor> colorConversionCache;
+constexpr const size_t                          MAX_COLOR_CONVERSION_CACHE_SIZE = 4096;
+
+//
+CHyprColor IHyprRenderer::getConvertedColor(const CHyprColor& color) {
+    const auto DESCR = m_renderData.currentFB ? m_renderData.currentFB->imageDescription() : workBufferImageDescription();
+
+    if (!DESCR) {
+        Log::logger->log(Log::ERR, "getConvertedColor: failed to get image description");
+        return color;
+    }
+
+    if (colorConversionCache.size() >= MAX_COLOR_CONVERSION_CACHE_SIZE)
+        colorConversionCache.clear();
+
+    const ColorConversionKey key = {color.r, color.g, color.b, color.a, DESCR->id()};
+
+    if (colorConversionCache.contains(key))
+        return colorConversionCache[key];
+
+    const auto converted      = convertColor(color, DEFAULT_SRGB_IMAGE_DESCRIPTION, DESCR);
+    colorConversionCache[key] = converted;
+
+    return converted;
+}

@@ -2298,6 +2298,10 @@ void IHyprRenderer::handleFullscreenSettings(PHLMONITOR pMonitor) {
             }
         }
 
+        // Do it here instead of disabling the block above to allow hdr -> hdr metadata changes in fullscreen
+        if (!*PAUTOHDR && !pMonitor->m_lastScanout)
+            wantHDR = configuredHDR;
+
         if (!hdrIsHandled) {
             if (pMonitor->inHDR() != wantHDR) {
                 if (*PAUTOHDR && !(pMonitor->inHDR() && configuredHDR)) {
@@ -3081,7 +3085,7 @@ void IHyprRenderer::makeSnapshot(PHLLS pLayer) {
     const auto PFRAMEBUFFER = pLayer->m_snapshotFB;
 
     PFRAMEBUFFER->alloc(PMONITOR->m_pixelSize.x, PMONITOR->m_pixelSize.y, DRM_FORMAT_ABGR8888);
-    PFRAMEBUFFER->setImageDescription(workBufferImageDescription());
+    PFRAMEBUFFER->setImageDescription(PMONITOR->workBufferImageDescription());
 
     beginFullFakeRender(PMONITOR, fakeDamage, PFRAMEBUFFER);
 
@@ -3124,7 +3128,7 @@ void IHyprRenderer::makeSnapshot(WP<Desktop::View::CPopup> popup) {
     const auto PFRAMEBUFFER = popup->m_snapshotFB;
 
     PFRAMEBUFFER->alloc(PMONITOR->m_pixelSize.x, PMONITOR->m_pixelSize.y, DRM_FORMAT_ABGR8888);
-    PFRAMEBUFFER->setImageDescription(workBufferImageDescription());
+    PFRAMEBUFFER->setImageDescription(PMONITOR->workBufferImageDescription());
 
     beginFullFakeRender(PMONITOR, fakeDamage, PFRAMEBUFFER);
 
@@ -3396,4 +3400,31 @@ SP<ITexture> IHyprRenderer::renderSplash(const std::function<SP<ITexture>(const 
     cairo_surface_destroy(CAIROSURFACE);
     cairo_destroy(CAIRO);
     return tex;
+}
+
+using ColorConversionKey = std::tuple<float, float, float, float, uint64_t>;
+static std::map<ColorConversionKey, CHyprColor> colorConversionCache;
+constexpr const size_t                          MAX_COLOR_CONVERSION_CACHE_SIZE = 4096;
+
+//
+CHyprColor IHyprRenderer::getConvertedColor(const CHyprColor& color) {
+    const auto DESCR = m_renderData.currentFB ? m_renderData.currentFB->imageDescription() : workBufferImageDescription();
+
+    if (!DESCR) {
+        Log::logger->log(Log::ERR, "getConvertedColor: failed to get image description");
+        return color;
+    }
+
+    if (colorConversionCache.size() >= MAX_COLOR_CONVERSION_CACHE_SIZE)
+        colorConversionCache.clear();
+
+    const ColorConversionKey key = {color.r, color.g, color.b, color.a, DESCR->id()};
+
+    if (colorConversionCache.contains(key))
+        return colorConversionCache[key];
+
+    const auto converted      = convertColor(color, DEFAULT_SRGB_IMAGE_DESCRIPTION, DESCR);
+    colorConversionCache[key] = converted;
+
+    return converted;
 }
